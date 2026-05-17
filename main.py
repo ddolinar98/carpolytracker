@@ -475,6 +475,7 @@ def format_stats(db):
 # ── Telegram ukazi ────────────────────────────────────────────────────────────
 
 def command_listener(db_ref):
+    global MY_PORTFOLIO_START
     offset = None
     while True:
         try:
@@ -503,7 +504,6 @@ def command_listener(db_ref):
                     if len(parts) == 2:
                         try:
                             new_val = float(parts[1])
-                            global MY_PORTFOLIO_START
                             MY_PORTFOLIO_START = new_val
                             send_telegram(f"✅ Portfolio nastavljen na ${new_val:.0f}")
                         except ValueError:
