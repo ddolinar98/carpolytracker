@@ -116,13 +116,39 @@ def should_skip(title):
     return any(kw in title_lower for kw in SKIP_KEYWORDS)
 
 
+def get_market_prices(condition_id):
+    try:
+        r = requests.get(f"https://clob.polymarket.com/markets/{condition_id}", timeout=10)
+        if r.status_code == 200:
+            data = r.json()
+            tokens = data.get("tokens", [])
+            prices = {}
+            for token in tokens:
+                outcome = token.get("outcome", "").lower()
+                price = float(token.get("price", 0))
+                prices[outcome] = price
+            return prices
+    except Exception as e:
+        print(f"CLOB API napaka: {e}")
+    return {}
+
+
 def format_notification(trade, car_portfolio, user_suggestion, pct):
     title = trade.get("title", "Neznan market")
     outcome = trade.get("outcome", "?")
     usdc = float(trade.get("usdcSize", 0))
     price = float(trade.get("price", 0))
     event_slug = trade.get("eventSlug", "")
+    condition_id = trade.get("conditionId", "")
     market_url = f"https://polymarket.com/event/{event_slug}" if event_slug else "https://polymarket.com"
+
+    prices = get_market_prices(condition_id)
+    yes_price = prices.get("yes", None)
+    no_price = prices.get("no", None)
+    if yes_price and no_price:
+        price_line = f"📈 Cene: <b>YES {yes_price*100:.0f}¢</b> | <b>NO {no_price*100:.0f}¢</b>\n"
+    else:
+        price_line = ""
 
     if car_portfolio and pct:
         sizing = (
@@ -135,7 +161,8 @@ def format_notification(trade, car_portfolio, user_suggestion, pct):
     return (
         f"🚨 <b>@Car je pravkar stavu!</b>\n\n"
         f"📊 {title}\n"
-        f"📍 Stran: <b>{outcome}</b> @ ${price:.3f}\n"
+        f"📍 Stran: <b>{outcome}</b> @ {price*100:.0f}¢\n"
+        f"{price_line}"
         f"💵 Znesek: <b>${usdc:.0f} USDC</b>\n\n"
         f"{sizing}\n\n"
         f"🔗 <a href='{market_url}'>Odpri market</a>"
