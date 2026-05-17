@@ -548,6 +548,37 @@ def bot_loop(db_ref):
                 and not should_skip(a.get("title", ""))
             ]
 
+            # Zazna SELL na sledenih marketih
+            tracked_ids = {t["conditionId"] for t in db["trades"] if t["status"] == "pending"}
+            new_sells = [
+                a for a in activity
+                if a.get("type") == "TRADE"
+                and a.get("side") == "SELL"
+                and float(a.get("timestamp", 0)) > last_timestamp
+                and a.get("conditionId") in tracked_ids
+            ]
+            for sell in reversed(new_sells):
+                cid = sell.get("conditionId")
+                original = next((t for t in db["trades"] if t["conditionId"] == cid and t["status"] == "pending"), None)
+                sell_price = float(sell.get("price", 0))
+                sell_usdc = float(sell.get("usdcSize", 0))
+                event_slug = sell.get("eventSlug", "")
+                market_url = f"https://polymarket.com/event/{event_slug}" if event_slug else "https://polymarket.com"
+                if original:
+                    entry_price = original.get("price", 0.5)
+                    price_change = ((sell_price - entry_price) / entry_price * 100) if entry_price else 0
+                    direction = "📈" if sell_price > entry_price else "📉"
+                    send_telegram(
+                        f"⚠️ <b>@Car je zaprl pozicijo!</b>\n\n"
+                        f"📊 {sell.get('title', '?')}\n"
+                        f"📍 Stran: <b>{sell.get('outcome', '?')}</b>\n"
+                        f"💵 Prodal za: <b>${sell_usdc:.0f}</b> @ {sell_price*100:.0f}¢\n"
+                        f"{direction} Vstop bil: {entry_price*100:.0f}¢ → zdaj {sell_price*100:.0f}¢ ({price_change:+.1f}%)\n\n"
+                        f"💡 <b>Razmisli ali tudi ti zapreš pozicijo.</b>\n\n"
+                        f"🔗 <a href='{market_url}'>Odpri market</a>"
+                    )
+                    print(f"Car zaprl: {sell.get('title', '?')}")
+
             if new_buys:
                 car_portfolio = get_car_portfolio(TRACKED_WALLET)
                 for trade in reversed(new_buys):
