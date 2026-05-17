@@ -118,6 +118,8 @@ def main():
                 and float(t.get("timestamp", 0)) > last_timestamp
             ]
 
+            new_buys = [t for t in new_buys if "up or down" not in t.get("title", "").lower()]
+
             if new_buys:
                 car_portfolio = get_car_portfolio(TRACKED_WALLET)
                 for trade in reversed(new_buys):
