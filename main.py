@@ -7,8 +7,8 @@ from datetime import datetime
 from flask import Flask, jsonify, render_template_string
 
 TRACKED_WALLET = os.environ.get("TRACKED_WALLET", "0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b")
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "8897942683:AAGMdMMwhVPdwXOYAgQFUI_sCm_1q5GMJT4")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "8087284904")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 MY_PORTFOLIO_START = float(os.environ.get("MY_PORTFOLIO", "6000"))
 POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "30"))
 PORT = int(os.environ.get("PORT", "8080"))
