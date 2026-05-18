@@ -346,7 +346,7 @@ def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE) as f:
             return json.load(f)
-    return {"last_timestamp": 0}
+    return {"last_timestamp": 0, "notified_sells": []}
 
 
 def save_state(state):
@@ -550,12 +550,13 @@ def bot_loop(db_ref):
 
             # Zazna SELL na sledenih marketih
             tracked_ids = {t["conditionId"] for t in db["trades"] if t["status"] == "pending"}
+            notified_sells = set(state.get("notified_sells", []))
             new_sells = [
                 a for a in activity
                 if a.get("type") == "TRADE"
                 and a.get("side") == "SELL"
-                and float(a.get("timestamp", 0)) > last_timestamp
                 and a.get("conditionId") in tracked_ids
+                and a.get("transactionHash", a.get("timestamp", "")) not in notified_sells
             ]
             for sell in reversed(new_sells):
                 cid = sell.get("conditionId")
@@ -577,6 +578,10 @@ def bot_loop(db_ref):
                         f"💡 <b>Razmisli ali tudi ti zapreš pozicijo.</b>\n\n"
                         f"🔗 <a href='{market_url}'>Odpri market</a>"
                     )
+                    sell_id = sell.get("transactionHash", sell.get("timestamp", ""))
+                    notified_sells.add(sell_id)
+                    state["notified_sells"] = list(notified_sells)[-200:]
+                    save_state(state)
                     print(f"Car zaprl: {sell.get('title', '?')}")
 
             if new_buys:
