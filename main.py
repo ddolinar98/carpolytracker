@@ -583,6 +583,8 @@ def bot_loop(db_ref):
                 car_portfolio = get_car_portfolio(TRACKED_WALLET)
                 for trade in reversed(new_buys):
                     usdc = float(trade.get("usdcSize", 0))
+                    if car_portfolio and (usdc / car_portfolio * 100) < 0.1:
+                        continue
                     price = float(trade.get("price", 0.5))
                     pct = (usdc / car_portfolio * 100) if car_portfolio else None
                     user_suggestion = (pct / 100 * MY_PORTFOLIO_START) if pct else 0
